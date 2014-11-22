@@ -1,0 +1,11 @@
+[DocWiki] is defined as much by [WhatDocWikiIs] as by what it is not.
+
+DocWiki is not...
+    - Final.  Pages may disappear.  Text may change.  All without warning.
+    - Owned.  Anyone may change any page.  Your writing is now part of the community documentation.
+    - Secure.  There are no logins, and anyone with access to the site may change anything.
+    - Fast.  Discussions and email chains can be summarized on wiki, but it is not generally a great place for anything that needs a quick reply.
+
+These anti-features imply:
+    - DocWiki is designed to run on a secured intranet, so only qualified developers should have access
+    - DocWiki is /not/ a good place to put permanent documentation, such as specifications, requirements, or design documentation.  Basically anything that needs to be part of a paper trail for accreditation or auditing of any kind.

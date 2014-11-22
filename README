@@ -1,0 +1,8 @@
+Installation
+
+- Run 'go install' from this directory.
+- Copy data/, tmpl/, and projectIndex.xml into $GOPATH/bin
+- cd to $GOPATH/bin
+- Run './docwiki'
+- Point your browser to http://localhost:8080 and have at it
+

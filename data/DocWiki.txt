@@ -1,0 +1,6 @@
+This is the starting point for the DocWiki project.
+
+    - [DocWikiLang]
+    - [WhatDocWikiIs]
+    - [WhatDocWikiIsNot]
+    - [DocWikiConfiguration]

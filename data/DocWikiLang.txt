@@ -1,0 +1,25 @@
+The text allowed in [DocWiki] pages is a simplification of [reStructuredText:http://docutils.sourceforge.net/rst.html], which generates a subset of HTML.  The basic idea behind reStructuredText and DocWiki is that it is simple and easy to write.
+
+/*Hyperlinks*/
+    - Wikilinks are intra-wiki links.  Wikilinks are embedded in square brackets, as in {[DocWiki]}
+    - External links are written as {[Google:http://www.google.com]}
+    - Links to doxygen documentation are written as {[doc:project:entity]}, where {project} is a project named in {projectIndex.xml}, and {entity} is any class or function included in the doxygen.  See [DocWikiConfiguration] for how to set up {projectIndex.xml} and setting up Doxygen for including in DocWiki.
+
+/*Structure*/
+    - Paragraphs are separated by blank lines
+    - Bulleted lists are created by putting dashes ({-}) at the beginning of the line at the same indentation.
+    - Numbered lists are created by putting hash marks ({#}) at the beginning of the line at the same indentation.
+    - Nested lists (of any kind) are created by creating a list at a deeper indentation than the current list.
+
+{This sentence would show up in its own paragraph.
+
+    - The start of a bulleted list
+    - Another entry
+        # A sub-list that is numbered
+        # Item 2
+    - Back at the original list}
+
+/*Formatting*/
+    - Bold text is created by using asterisks, e.g., {*bold text*}
+    - Italicized text is created by using slashes, e.g., {/italicized text/}
+    - Monospaced text is created by using curly brackets, e.g., {{monospaced text}}

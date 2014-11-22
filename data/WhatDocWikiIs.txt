@@ -1,0 +1,7 @@
+[DocWiki] can be used without linking to Doxygen as a very simple wiki.  However, the real purpose of DocWiki is to provide an easy way to write mid-level documentation for a project that spans the gap between high-level documents such as specification, requirements, and design, and API documentation such as Doxygen.  DocWiki aims to be a good place to put technical memos, project introductions, design rationale, failed design attempts, etc.
+
+DocWiki is...
+    - Mutable.  DocWiki is a place for questions to be posted and answers to be provided.  Once the answers have been provided, the question and answer may both be deleted, or may be converted to an explanation that continues to live on the wiki.
+    - Flexible.  If a page is distracting, delete it (by deleting its contents).  If a new page is required, create it.  If something is unclear, clarify it.  If something is wrong, correct it.
+    - For developers.  DocWiki pages should be considered development documentation, and should be controlled by external process as little as necessary.
+    - Defined as much by what it is as by [WhatDocWikiIsNot]

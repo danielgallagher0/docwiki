@@ -1,0 +1,2 @@
+- Put data, tmpl, and projectIndex.xml into customizable locations (e.g., /var/run/docwiki)
+- Make port customizable from command line

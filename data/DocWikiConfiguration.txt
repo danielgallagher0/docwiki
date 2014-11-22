@@ -1,0 +1,33 @@
+To configure [DocWiki], you need to build your project Doxygen HTML a particular way, then put it in a particular place.  DocWiki also has a single configuration file that tells it where to find various projects.
+
+/*DocWiki Configuration*/
+
+The DocWiki configuration file is {projectIndex.xml}, and it lives in the directory where DocWiki is run.  It contains one {project} tag for each project, and looks like this: {
+<?xml version="1.0" encoding="UTF-8"?>
+<index>
+  <project name="example">
+    <searchdata>doc/example/searchData.xml</searchdata>
+  </project>
+</index>}
+
+    - The project name ({example} above) serves two purposes.
+        # It tells DocWiki that {example} is a valid name for doclinks, e.g., {[doc:example:cExample]}.  See [DocWikiLang] for more on doclinks.
+        # The project name must be the main directory under {doc/} where the project Doxygen-generated HTML is stored.
+    - The {searchdata} tag tells DocWiki where to find the Doxygen-generated search data file that it uses to find the references from doclinks.  The search data file may live anywhere and have any name, but using the convention above will make configuration easier.
+
+/*Doxygen Configuration*/
+
+To generate Doxygen documentation in such a way that DocWiki can use it, you need to set the following variables in the project's {Doxyfile}:
+    - {GENERATE_HTML} to {yes}
+    - {SEARCHENGINE} to {yes}
+    - {SERVER_BASED_SEARCH} to {yes}
+    - {EXTERNAL_SEARCH} to {yes}
+
+Then to generate the Doxygen HTML and search data file, and put them in the correct place, run:
+    # {$ cd <project dir>}
+    # {$ doxygen}
+    # {$ cp -a <docs directory> <DocWiki directory>/doc}
+
+So under {<DocWiki directory>/doc} should be, e.g., {<DW>/doc/example/html/} and {<DW>/doc/example/searchData.xml}
+
+Then restart DocWiki, and you will be able to use doclinks to the new project.  Run through these steps every time the doxygen changes to keep your project documentation up-to-date.

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/danielgallagher/docwiki/wikilang"
+	"github.com/danielgallagher0/docwiki/wikilang"
 	"html/template"
 	"io/ioutil"
 	"net/http"

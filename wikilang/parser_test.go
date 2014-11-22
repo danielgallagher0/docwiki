@@ -501,10 +501,10 @@ func TestParagraphAfterList(t *testing.T) {
 		Token{Text, "New", 0},
 		Token{Text, "Paragraph", 0},
 		Token{EndOfFile, "", 0}},
-		"[{Tag p () [{Text: Beginning of paragraph 1.} " +
-			"{Tag ul () [{Tag li () [{Text: Data 1} ]} " +
-			"{Tag li () [{Text: Data 2} ]} ]} " +
-			"{Text: More stuff} ]} ]" +
+		"[{Tag p () [{Text: Beginning of paragraph 1.} "+
+			"{Tag ul () [{Tag li () [{Text: Data 1} ]} "+
+			"{Tag li () [{Text: Data 2} ]} ]} "+
+			"{Text: More stuff} ]} ]"+
 			"[{Tag p () [{Text: New Paragraph} ]} ]")
 }
 
@@ -557,11 +557,11 @@ func TestSubList(t *testing.T) {
 		Token{NewLine, "", 0},
 		Token{Text, "End", 0},
 		Token{EndOfFile, "", 0}},
-		"[{Tag p () [{Text: Stuff.} " +
-			"{Tag ul () [{Tag li () [{Text: Heading 1} " +
-			"{Tag ul () [{Tag li () [{Text: Sub-list item 1} ]} " +
-			"{Tag li () [{Text: Item 2} ]} ]} ]} " +
-			"{Tag li () [{Text: Heading 2} ]} ]} " +
+		"[{Tag p () [{Text: Stuff.} "+
+			"{Tag ul () [{Tag li () [{Text: Heading 1} "+
+			"{Tag ul () [{Tag li () [{Text: Sub-list item 1} ]} "+
+			"{Tag li () [{Text: Item 2} ]} ]} ]} "+
+			"{Tag li () [{Text: Heading 2} ]} ]} "+
 			"{Text: End} ]} ]")
 }
 
@@ -597,11 +597,11 @@ func TestMultiplyNestedListFalloff(t *testing.T) {
 		Token{NewLine, "", 0},
 		Token{Text, "End", 0},
 		Token{EndOfFile, "", 0}},
-		"[{Tag p () [{Text: Stuff.} " +
-			"{Tag ul () [{Tag li () [{Text: Heading 1} " +
-			"{Tag ul () [{Tag li () [{Text: Sub-list item 1} " +
-			"{Tag ul () [{Tag li () [{Text: Sub-sub-list} " +
-			"{Tag ul () [{Tag li () [{Text: Sub-sub-sub-list} ]} ]} ]} ]} ]} ]} ]} " +
-			"{Tag li () [{Text: Heading 2} ]} ]} " +
+		"[{Tag p () [{Text: Stuff.} "+
+			"{Tag ul () [{Tag li () [{Text: Heading 1} "+
+			"{Tag ul () [{Tag li () [{Text: Sub-list item 1} "+
+			"{Tag ul () [{Tag li () [{Text: Sub-sub-list} "+
+			"{Tag ul () [{Tag li () [{Text: Sub-sub-sub-list} ]} ]} ]} ]} ]} ]} ]} "+
+			"{Tag li () [{Text: Heading 2} ]} ]} "+
 			"{Text: End} ]} ]")
 }

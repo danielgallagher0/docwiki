@@ -140,11 +140,10 @@ func searchHandler(w http.ResponseWriter, r *http.Request, title string) {
 
 				if len(re.FindString(str)) > 0 {
 					match = file[len(dataDir):]
-					match = match[0:len(match)-4]
+					match = match[0 : len(match)-4]
 					break
 				}
 			}
-
 
 			matches <- match
 		}(path, title)

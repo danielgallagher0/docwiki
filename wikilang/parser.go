@@ -354,7 +354,7 @@ ParagraphParser:
 			subtree, next := BuildTag(tokens[i+1:], tokens[i].IntValue, indentation, nextPredicates)
 			if len(subtree.nodes) > 0 {
 				subtag := subtree.nodes[0].(TagNode)
-				boldType := Bold;
+				boldType := Bold
 				if tokens[i].Type == EmphasisDelimeter {
 					boldType = Emphasis
 				}
@@ -366,8 +366,8 @@ ParagraphParser:
 		case UnorderedListItem, OrderedListItem:
 			nextPredicates := endPredicates
 			nextPredicates = append(nextPredicates, func(token Token) (bool, bool) {
-				return ( token.Type == UnorderedListItem ||
-					token.Type == OrderedListItem ) &&
+				return (token.Type == UnorderedListItem ||
+					token.Type == OrderedListItem) &&
 					token.IntValue <= indentation, false
 			})
 
@@ -396,7 +396,7 @@ ParagraphParser:
 
 			if (i < len(tokens) && tokens[i].Type == endType) ||
 				(i < len(tokens) && tokens[i-1].IntValue > tokens[i].IntValue) ||
-				(i + 1 < len(tokens) && tokens[i].IntValue <= tokens[i+1].IntValue){
+				(i+1 < len(tokens) && tokens[i].IntValue <= tokens[i+1].IntValue) {
 				i--
 			}
 

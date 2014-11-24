@@ -2,6 +2,11 @@
 // Use of this source code is covered by the MIT License, the full
 // text of which can be found in the LICENSE file.
 
+// Package main implements the wiki.  It creates the HTML templates
+// for viewing, editing, and searching for wiki pages, and uses the
+// wikilang package to convert from wiki source to HTML.  See the
+// README and the initial wiki pages for information on how to use and
+// setup the wiki.
 package main
 
 import (
@@ -16,9 +21,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 )
 
+// Page is a container for wiki pages.  The fields are exported so
+// that they can be used to fill in templates.  Note that *Page also
+// defines a PrettyTitle() function that is used by the templates.
 type Page struct {
 	Title string
 	Body  []byte
@@ -40,41 +47,8 @@ var templates = template.Must(template.ParseFiles(tmplDir+"edit.html",
 	tmplDir+"search.html"))
 var titleValidator = regexp.MustCompile("^" + titleRegexp + "$")
 
-func WikiCase(link string) string {
-	addSpaces := regexp.MustCompile("[[:upper:]]")
-	splitString := strings.Trim(addSpaces.ReplaceAllStringFunc(link, func(s string) string {
-		return " " + s
-	}), " ")
-
-	consolidateSpaces := regexp.MustCompile("[[:space:]]+")
-	return consolidateSpaces.ReplaceAllString(splitString, " ")
-}
-
 func (p *Page) PrettyTitle() string {
-	return WikiCase(p.Title)
-}
-
-func ViewText(body string) string {
-	data := make(chan byte)
-	tokens := make(chan wikilang.Token)
-	trees := make(chan wikilang.ParseTree)
-	result := make(chan string)
-
-	lexer := wikilang.NewLexer(data, tokens)
-	parser := wikilang.NewParser(tokens, trees)
-	gen := wikilang.NewHtmlGen(trees, result)
-
-	go func() {
-		for _, c := range []byte(body) {
-			data <- c
-		}
-		data <- 0
-	}()
-	go lexer.Lex()
-	go parser.Parse()
-	go gen.Generate()
-
-	return <-result
+	return wikilang.WikiCase(p.Title)
 }
 
 func renderTemplate(w http.ResponseWriter, file string, p *Page) {
@@ -89,7 +63,7 @@ func renderTemplate(w http.ResponseWriter, file string, p *Page) {
 	body := buf.Bytes()
 
 	if file == "view" || file == "search" {
-		body = []byte(ViewText(string(body)))
+		body = []byte(wikilang.WikiToHtml(string(body)))
 	}
 
 	w.Write(body)

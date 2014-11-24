@@ -10,18 +10,18 @@ import (
 	"io/ioutil"
 )
 
-const projectIndex = "projectIndex.xml"
+const projectIndexFile = "projectIndex.xml"
 
-type ProjectIndex struct {
+type projectIndex struct {
 	urls     map[string]string
 	done     bool
 	notifier chan bool
 }
 
-var projectDocs map[string]*ProjectIndex
+var projectDocs map[string]*projectIndex
 
 func init() {
-	projectDocs = make(map[string]*ProjectIndex)
+	projectDocs = make(map[string]*projectIndex)
 
 	type Project struct {
 		Name       string `xml:"name,attr"`
@@ -31,23 +31,30 @@ func init() {
 		Project []Project `xml:"project"`
 	}
 
-	data, err := ioutil.ReadFile(projectIndex)
+	data, err := ioutil.ReadFile(projectIndexFile)
 	if err != nil {
-		panic(fmt.Sprintf("Could not read %s", projectIndex))
+		panic(fmt.Sprintf("Could not read %s", projectIndexFile))
 	}
 
 	var result Result
 	if err = xml.Unmarshal(data, &result); err != nil {
-		panic(fmt.Sprintf("Could not read %s: %s", projectIndex, err))
+		panic(fmt.Sprintf("Could not read %s: %s", projectIndexFile, err))
 	}
 
 	for _, project := range result.Project {
-		indexer := &ProjectIndex{map[string]string{}, false, make(chan bool)}
+		indexer := &projectIndex{map[string]string{}, false, make(chan bool)}
 		projectDocs[project.Name] = indexer
-		go indexer.Index(project.SearchData)
+		go indexer.index(project.SearchData)
 	}
 }
 
+// DocLink searches the indexed project to find the URL for a
+// particular entity in the project's Doxygen.  The entity can be
+// anything that Doxygen provides a link to, such as classes, methods,
+// functions, types, etc.
+//
+// If the project or entity does not exist, the URL will be to the
+// project's Doxygen index.  It may or may not exist.
 func DocLink(project, entity string) string {
 	url := "index.html"
 	indexer, ok := projectDocs[project]
@@ -61,7 +68,7 @@ func DocLink(project, entity string) string {
 	return "/doc/" + project + "/html/" + url
 }
 
-func (indexer *ProjectIndex) Index(searchData string) {
+func (indexer *projectIndex) index(searchData string) {
 	type Field struct {
 		Name  string `xml:"name,attr"`
 		Value string `xml:",innerxml"`

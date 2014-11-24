@@ -9,17 +9,19 @@ import (
 	"unicode"
 )
 
+// A CodeWriter lets a code generator create structured text with
+// specific indentation levels for each line.
 type CodeWriter interface {
 	io.Writer
 
-	FreshLine()
-	NewLine()
-	Indent()
-	ChangeIndentation(i int)
-	LiteralText(literal bool)
+	FreshLine()               // Write out a newline if we are not on a new line
+	NewLine()                 // Write out a newline unconditionally
+	Indent()                  // Write out indentation spaces
+	ChangeIndentation(i int)  // Update the indentatino level
+	LiteralText(literal bool) // Write text without changing it if true
 }
 
-type StandardCodeWriter struct {
+type standardCodeWriter struct {
 	writer io.Writer
 
 	onNewLine   bool
@@ -31,21 +33,23 @@ type StandardCodeWriter struct {
 	useLiteralText bool
 }
 
-func NewCodeWriter(w io.Writer) *StandardCodeWriter {
-	return &StandardCodeWriter{w, true, 0, 0, 80, false}
+// NewCodeWriter returns a new code writer that writes to the provided
+// writer.
+func NewCodeWriter(w io.Writer) CodeWriter {
+	return &standardCodeWriter{w, true, 0, 0, 80, false}
 }
 
-func (w *StandardCodeWriter) FreshLine() {
+func (w *standardCodeWriter) FreshLine() {
 	if !w.onNewLine {
 		w.NewLine()
 	}
 }
 
-func (w *StandardCodeWriter) NewLine() {
+func (w *standardCodeWriter) NewLine() {
 	w.basicWrite([]byte("\n"))
 }
 
-func (w *StandardCodeWriter) Indent() {
+func (w *standardCodeWriter) Indent() {
 	if w.onNewLine {
 		spaces := make([]byte, w.indentation)
 		for i, _ := range spaces {
@@ -55,18 +59,18 @@ func (w *StandardCodeWriter) Indent() {
 	}
 }
 
-func (w *StandardCodeWriter) ChangeIndentation(i int) {
+func (w *standardCodeWriter) ChangeIndentation(i int) {
 	w.indentation += i
 	if w.indentation < 0 {
 		panic("CodeWriter indentation < 0")
 	}
 }
 
-func (w *StandardCodeWriter) LiteralText(literal bool) {
+func (w *standardCodeWriter) LiteralText(literal bool) {
 	w.useLiteralText = literal
 }
 
-func (w *StandardCodeWriter) Write(b []byte) (n int, err error) {
+func (w *standardCodeWriter) Write(b []byte) (n int, err error) {
 	n = 0
 	err = nil
 
@@ -101,7 +105,7 @@ func (w *StandardCodeWriter) Write(b []byte) (n int, err error) {
 	return
 }
 
-func (w *StandardCodeWriter) basicWrite(b []byte) (n int, err error) {
+func (w *standardCodeWriter) basicWrite(b []byte) (n int, err error) {
 	n, err = w.writer.Write(b)
 	if err != nil {
 		return

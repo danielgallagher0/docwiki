@@ -39,7 +39,7 @@ func runParserTest(t *testing.T, tokens []Token, expected string) {
 		for {
 			count++
 			tree := <-out
-			if len(tree.nodes) == 0 {
+			if len(tree.Nodes) == 0 {
 				break
 			}
 			actual = actual + tree.String()

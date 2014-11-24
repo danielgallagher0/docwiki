@@ -4,30 +4,15 @@
 
 package main
 
-import "testing"
+import(
+	"github.com/danielgallagher0/docwiki/wikilang"
+	"testing"
+)
 
 func compare(t *testing.T, actual, expected string) {
 	if expected != actual {
 		t.Errorf("  Expected: \"%s\" (%d)", expected, len(expected))
 		t.Errorf("    Actual: \"%s\" (%d)", actual, len(actual))
-	}
-}
-
-func TestWikiCase(t *testing.T) {
-	type TestData struct {
-		data, expected string
-	}
-
-	for _, data := range [...]TestData{
-		{data: "lowercase", expected: "lowercase"},
-		{data: "Uppercase", expected: "Uppercase"},
-		{data: "CamelCase", expected: "Camel Case"},
-		{data: "wrongStart", expected: "wrong Start"},
-		{data: "LotsOfWords", expected: "Lots Of Words"},
-		{data: "Existing Spacing", expected: "Existing Spacing"},
-		{data: "Mixed SpacingWords", expected: "Mixed Spacing Words"}} {
-
-		compare(t, WikiCase(data.data), data.expected)
 	}
 }
 
@@ -37,7 +22,7 @@ type ViewTextTestData struct {
 
 func compareViewText(t *testing.T, allData []ViewTextTestData) {
 	for _, data := range allData {
-		compare(t, ViewText(data.data), data.expected)
+		compare(t, wikilang.WikiToHtml(data.data), data.expected)
 	}
 }
 

@@ -7,68 +7,96 @@ package wikilang
 import (
 	"fmt"
 	"net/url"
-	"regexp"
 	"strings"
 )
 
+// These values indicate the type of tag node in a parse tree.  They
+// happen to correspond directly to the HTML tag used by the HTML
+// generator, but that is only a convenience.
 const (
-	Paragraph     = "p"
-	OrderedList   = "ol"
-	UnorderedList = "ul"
-	ListItem      = "li"
-	Link          = "a"
-	Bold          = "b"
-	Emphasis      = "em"
-	Literal       = "tt"
-	Preformatted  = "pre"
+	Paragraph     = "p"   // Container tag for a paragraph
+	OrderedList   = "ol"  // Container tag for an ordered list
+	UnorderedList = "ul"  // Container tag for an unordered list
+	ListItem      = "li"  // An item in a list
+	Link          = "a"   // A link
+	Bold          = "b"   // Bold text
+	Emphasis      = "em"  // Emphasized text
+	Literal       = "tt"  // Literal text embedded in a single line
+	Preformatted  = "pre" // Multi-line literal text
 )
 
+// A Visitor allows the parse tree to call a function for each node.
+// Parse tree implements the visitor pattern, and the visitor must
+// implement this interface.  The specific type of node is already
+// called out, so there is no need for double dispatch.  Tag nodes are
+// visited when they are entered and exited, and text nodes are
+// visited once.
 type Visitor interface {
+	// VisitTagBegin is called on a tag node when the visitor is about
+	// to visit the tag node's internal parse tree.
 	VisitTagBegin(n TagNode)
+
+	// VisitTagEnd is called on a tag node when the visitor has
+	// finished visiting the tag node's internal parse tree.
 	VisitTagEnd(n TagNode)
+
+	// VisitText is called when a text node is encountered in a parse
+	// tree.
 	VisitText(n TextNode)
 }
 
+// A ParseNode provides the interface that other nodes must implement
+// in order to be printed and visited.
 type ParseNode interface {
 	fmt.Stringer
 
+	// Visit causes the node to be visited by the provided Visitor.
 	Visit(v Visitor)
 }
 
+// A ParseTree provides a list of parse nodes.  Tag nodes may contain
+// more parse trees (thus the name is tree, not list).
 type ParseTree struct {
-	nodes []ParseNode
+	Nodes []ParseNode
 }
 
+// A TagNode represents a parse tree that should be surrounded by a
+// tag.  This corresponds directly to HTML tags, but could be used to
+// generate other types of output
 type TagNode struct {
-	tag        string
-	attributes map[string]string
-	tree       ParseTree
+	Tag        string            // Tag surronding the inner tree
+	Attributes map[string]string // Attributes associated with this tag
+	Tree       ParseTree         // Contents of the tag
 }
 
+// A TextNode is the atomic value inside a parse tree.  It represents
+// a single block of text.
 type TextNode struct {
-	text string
+	Text string // Value of the text block
 }
 
-type NewLineNode struct {
-	indentation int
-}
-
+// A Parser contains the channels that the parsing algorithm uses to
+// communicate with the lexer and the generator.  It reads tokens in,
+// and emits full parse trees, one per top-level paragraph.
 type Parser struct {
-	in  chan Token
-	out chan ParseTree
+	In  chan Token     // Channel to read tokens from
+	Out chan ParseTree // Channel to write fully-formed parse trees to
 
 	nextToken *Token
 }
 
+// NewParser creates a parser that uses the given channels to
+// communicate to the lexer and generator.
 func NewParser(i chan Token, o chan ParseTree) Parser {
 	return Parser{i, o, nil}
 }
 
-// Parse Tree
-
+// String converts a ParseTree to its string representation.  The
+// entire parse tree is surrounded by square brackets, and the nodes
+// all have spaces between them.
 func (t *ParseTree) String() string {
 	s := "["
-	for _, node := range t.nodes {
+	for _, node := range t.Nodes {
 		s = s + node.String() + " "
 	}
 
@@ -77,47 +105,46 @@ func (t *ParseTree) String() string {
 	return s
 }
 
-// Tag Node
-
+// String converts a TagNode to its string representation.  The entire
+// tag is surrounded by curly brackets, followed by the name of the
+// tag, its attributes in parentheses, then its inner ParseTree.
 func (n TagNode) String() string {
-	s := "{Tag " + n.tag + " ("
-	for key, value := range n.attributes {
+	s := "{Tag " + n.Tag + " ("
+	for key, value := range n.Attributes {
 		s = s + key + "=" + value + " "
 	}
-	s = s + ") " + n.tree.String() + "}"
+	s = s + ") " + n.Tree.String() + "}"
 
 	return s
 }
 
-// Text Node
-
+// String converts a TextNode to its string representation.  The data
+// is surrounded by curly brackets and denotes that it is a text
+// node.
 func (n TextNode) String() string {
-	return "{Text: " + n.text + "}"
+	return "{Text: " + n.Text + "}"
 }
 
-// New line node
-
-func (n NewLineNode) String() string {
-	return "\n"
-}
-
-// Parser
-
+// Parse reads tokens and outputs full ParseTrees.  The tokens are
+// read by paragraph, and one ParseTree is emitted per paragraph.  A
+// "paragraph" in these terms is a top-level paragraph (all at the
+// same indentation).  Paragraphs are separated by at least one blank
+// line.
 func (p *Parser) Parse() {
 	for {
-		tokens, end := p.ReadParagraph()
-		for _, par := range ParseParagraph(combineTokens(indentTokens(tokens))) {
-			p.out <- par
+		tokens, end := p.readParagraph()
+		for _, par := range parseParagraph(combineTokens(indentTokens(tokens))) {
+			p.Out <- par
 		}
 
 		if end {
-			p.out <- ParseTree{}
+			p.Out <- ParseTree{}
 			break
 		}
 	}
 }
 
-func (p *Parser) ReadParagraph() (tokens []Token, end bool) {
+func (p *Parser) readParagraph() (tokens []Token, end bool) {
 	hasContent := false
 
 	end = false
@@ -128,7 +155,7 @@ func (p *Parser) ReadParagraph() (tokens []Token, end bool) {
 			token = *p.nextToken
 			p.nextToken = nil
 		} else {
-			token = <-p.in
+			token = <-p.In
 		}
 
 		switch token.Type {
@@ -146,7 +173,7 @@ func (p *Parser) ReadParagraph() (tokens []Token, end bool) {
 
 				shouldBreak = (consecutiveNewLines > 1 && token.IntValue == 0)
 
-				token = <-p.in
+				token = <-p.In
 			}
 			p.nextToken = &token
 
@@ -223,16 +250,6 @@ func indentTokens(tokens []Token) []Token {
 	return indented
 }
 
-func WikiCase(link string) string {
-	addSpaces := regexp.MustCompile("[[:upper:]]")
-	splitString := strings.Trim(addSpaces.ReplaceAllStringFunc(link, func(s string) string {
-		return " " + s
-	}), " ")
-
-	consolidateSpaces := regexp.MustCompile("[[:space:]]+")
-	return consolidateSpaces.ReplaceAllString(splitString, " ")
-}
-
 func wikiWordUrl(s string) string {
 	parts := strings.SplitN(s, ":", 3)
 	switch len(parts) {
@@ -270,6 +287,10 @@ func wikiWordText(s string) string {
 	return ""
 }
 
+// ToNode converts a token to its corresponding parse node.  For
+// tokens that denote TagNodes, the inner parse trees are empty.
+// Embedded HTML is treated as text, and is passed straight to the
+// output.
 func (t Token) ToNode() ParseNode {
 	switch t.Type {
 	case Text, Tag:
@@ -306,15 +327,12 @@ func (t Token) ToNode() ParseNode {
 
 		return TagNode{tagType, map[string]string{},
 			ParseTree{[]ParseNode{TextNode{t.TextValue}}}}
-
-	case NewLine:
-		return NewLineNode{t.IntValue}
 	}
 
 	return TextNode{""}
 }
 
-func BuildTag(tokens []Token, indentation, prevIndentation int, endPredicates []func(Token) (bool, bool)) (ParseTree, int) {
+func buildTag(tokens []Token, indentation, prevIndentation int, endPredicates []func(Token) (bool, bool)) (ParseTree, int) {
 	tagType := ""
 
 	innerTree := ParseTree{}
@@ -339,8 +357,8 @@ ParagraphParser:
 		}
 
 		if tokens[i].IntValue > indentation {
-			subtree, next := BuildTag(tokens[i:], tokens[i].IntValue, indentation, endPredicates)
-			innerTree.nodes = append(innerTree.nodes, subtree.nodes...)
+			subtree, next := buildTag(tokens[i:], tokens[i].IntValue, indentation, endPredicates)
+			innerTree.Nodes = append(innerTree.Nodes, subtree.Nodes...)
 			i += next
 			continue
 		}
@@ -355,15 +373,15 @@ ParagraphParser:
 			nextPredicates = append(nextPredicates, func(token Token) (bool, bool) {
 				return token.Type == tokens[i].Type, true
 			})
-			subtree, next := BuildTag(tokens[i+1:], tokens[i].IntValue, indentation, nextPredicates)
-			if len(subtree.nodes) > 0 {
-				subtag := subtree.nodes[0].(TagNode)
+			subtree, next := buildTag(tokens[i+1:], tokens[i].IntValue, indentation, nextPredicates)
+			if len(subtree.Nodes) > 0 {
+				subtag := subtree.Nodes[0].(TagNode)
 				boldType := Bold
 				if tokens[i].Type == EmphasisDelimeter {
 					boldType = Emphasis
 				}
-				boldTree := TagNode{boldType, map[string]string{}, subtag.tree}
-				innerTree.nodes = append(innerTree.nodes, boldTree)
+				boldTree := TagNode{boldType, map[string]string{}, subtag.Tree}
+				innerTree.Nodes = append(innerTree.Nodes, boldTree)
 			}
 			i += next
 
@@ -379,19 +397,19 @@ ParagraphParser:
 			currentIndent := tokens[i].IntValue
 			for i < len(tokens) && ((tokens[i].Type == endType && tokens[i].IntValue == currentIndent) || tokens[i].IntValue > currentIndent) {
 				if tokens[i].IntValue > indentation {
-					subtree, next := BuildTag(tokens[i:], tokens[i].IntValue, indentation, endPredicates)
-					innerTree.nodes = append(innerTree.nodes, subtree.nodes...)
+					subtree, next := buildTag(tokens[i:], tokens[i].IntValue, indentation, endPredicates)
+					innerTree.Nodes = append(innerTree.Nodes, subtree.Nodes...)
 					i += next + 1
 				} else {
-					subtree, next := BuildTag(tokens[i+1:], tokens[i].IntValue, indentation, nextPredicates)
-					if len(subtree.nodes) > 0 {
-						firstSubNode := subtree.nodes[0].(TagNode)
-						if firstSubNode.tag == Paragraph {
-							subtree = firstSubNode.tree
+					subtree, next := buildTag(tokens[i+1:], tokens[i].IntValue, indentation, nextPredicates)
+					if len(subtree.Nodes) > 0 {
+						firstSubNode := subtree.Nodes[0].(TagNode)
+						if firstSubNode.Tag == Paragraph {
+							subtree = firstSubNode.Tree
 						}
 
 						listItem := TagNode{ListItem, map[string]string{}, subtree}
-						innerTree.nodes = append(innerTree.nodes, listItem)
+						innerTree.Nodes = append(innerTree.Nodes, listItem)
 					}
 
 					i += next + 1
@@ -407,7 +425,7 @@ ParagraphParser:
 			break ParagraphParser
 
 		default:
-			innerTree.nodes = append(innerTree.nodes, tokens[i].ToNode())
+			innerTree.Nodes = append(innerTree.Nodes, tokens[i].ToNode())
 		}
 	}
 
@@ -418,12 +436,12 @@ ParagraphParser:
 	return ParseTree{[]ParseNode{TagNode{tagType, map[string]string{}, innerTree}}}, i
 }
 
-func ParseParagraph(tokens []Token) []ParseTree {
+func parseParagraph(tokens []Token) []ParseTree {
 	trees := []ParseTree{}
 	start := 0
 
 	for start < len(tokens) {
-		tree, next := BuildTag(tokens[start:], 0, 0, []func(Token) (bool, bool){})
+		tree, next := buildTag(tokens[start:], 0, 0, []func(Token) (bool, bool){})
 		trees = append(trees, tree)
 		start += next + 1
 	}
@@ -444,23 +462,22 @@ func getWrapperTag(token Token) string {
 	return wrapperTag
 }
 
-// Visiting tree
-
+// Visit visits each of the nodes in the ParseTree.
 func (t ParseTree) Visit(v Visitor) {
-	for _, node := range t.nodes {
+	for _, node := range t.Nodes {
 		node.Visit(v)
 	}
 }
 
+// Visit visits the tag node and all of the nodes in its ParseTree.
+// The tag node is visited before and after its ParseTree.
 func (n TagNode) Visit(v Visitor) {
 	v.VisitTagBegin(n)
-	n.tree.Visit(v)
+	n.Tree.Visit(v)
 	v.VisitTagEnd(n)
 }
 
+// Visit visits the text node exactly once.
 func (n TextNode) Visit(v Visitor) {
 	v.VisitText(n)
-}
-
-func (n NewLineNode) Visit(v Visitor) {
 }

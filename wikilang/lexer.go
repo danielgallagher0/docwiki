@@ -5,52 +5,66 @@
 package wikilang
 
 import (
-	"strings"
+	"bytes"
 	"unicode"
 )
 
+// These are the types of tokens that the lexer may generate.
 const (
-	Text = iota
-	BoldDelimeter
-	EmphasisDelimeter
-	UnorderedListItem
-	OrderedListItem
-	LiteralText
-	WikiLink
-	Tag
-	NewLine
-	EndOfFile
+	Text = iota       // Standard text
+	BoldDelimeter     // Beginning or end of boldness
+	EmphasisDelimeter // Beginning or end of emphasis
+	UnorderedListItem // Beginning of an item in an unordered list
+	OrderedListItem   // Beginning of an item in an ordered list
+	LiteralText       // Literal, preformatted text
+	WikiLink          // Wiki markup for links
+	Tag               // Embedded HTML markup
+	NewLine           // New line (with indentation of next line)
+	EndOfFile         // Special token for the end of list
 )
 
+// These are the special bytes that indicate switches in token types.
+// Text tokens are additionally separated by spaces.
 const (
-	BOLD_DELIMETER           = '*'
-	EMPHASIS_DELIMETER       = '/'
-	UNORDERED_LIST_ITEM_MARK = '-'
-	ORDERED_LIST_ITEM_MARK   = '#'
-	WIKILINK_OPEN            = '['
-	WIKILINK_CLOSE           = ']'
-	LITERAL_TEXT_OPEN        = '{'
-	LITERAL_TEXT_CLOSE       = '}'
-	TAG_OPEN                 = '<'
-	TAG_CLOSE                = '>'
+	BOLD_MARK                = '*' // Denote boldness
+	EMPHASIS_MARK            = '/' // Denote emphasis
+	UNORDERED_LIST_ITEM_MARK = '-' // Denote item in unordered list
+	ORDERED_LIST_ITEM_MARK   = '#' // Denote item in ordered list
+	WIKILINK_OPEN            = '[' // Begin wiki markup
+	WIKILINK_CLOSE           = ']' // End wiki markup
+	LITERAL_TEXT_OPEN        = '{' // Begin literal text markup
+	LITERAL_TEXT_CLOSE       = '}' // End literal text markup
+	TAG_OPEN                 = '<' // Begin embedded HTML
+	TAG_CLOSE                = '>' // End embedded HTML
 )
 
+// A Token is an atomic element of the wiki language.  Each token has
+// a type, which the parser uses to structure the end result.  The
+// Token also knows its own value, which is usually text, but may be
+// an integer (representing indentation).
 type Token struct {
-	Type      int
-	TextValue string
-	IntValue  int
+	Type      int    // Categorization of the token
+	TextValue string // Text value of the token
+	IntValue  int    // Indentation of the token
 }
 
+// A Lexer converts a stream of bytes into a stream of tokens.  The
+// end of the byte stream must be denoted by the special NUL character
+// (0), which must not, therefore, appear in the main byte stream.
+// When the end character is read, a special EndOfFile token is
+// generated.
 type Lexer struct {
-	in  chan byte
-	out chan Token
+	In  chan byte  // Channel to read bytes from
+	Out chan Token // Channel to write tokens to
 }
 
+// NewLexer returns a lexer that communicates over the provided
+// channels.
 func NewLexer(i chan byte, o chan Token) Lexer {
 	return Lexer{i, o}
 }
 
-const interrupters = "[{*/<\n"
+var interrupters []byte
 
 var lexers map[byte]func(byte, chan byte) (Token, bool)
 var pending byte
@@ -65,12 +79,12 @@ func singleByteToken(t int) func(byte, chan byte) (Token, bool) {
 func defaultToken(b byte, ch chan byte) (Token, bool) {
 	value := string(b)
 	b = <-ch
-	for b != 0 && !unicode.IsSpace(rune(b)) && !strings.Contains(interrupters, string(b)) {
+	for b != 0 && !unicode.IsSpace(rune(b)) && bytes.IndexByte(interrupters, b) < 0 {
 		value = value + string(b)
 		b = <-ch
 	}
 
-	if strings.Contains(interrupters, string(b)) {
+	if bytes.IndexByte(interrupters, b) >= 0 {
 		pending = b
 		hasPending = true
 	}
@@ -79,23 +93,31 @@ func defaultToken(b byte, ch chan byte) (Token, bool) {
 }
 
 func init() {
+	interrupters = []byte{
+		WIKILINK_OPEN,
+		LITERAL_TEXT_OPEN,
+		BOLD_MARK,
+		EMPHASIS_MARK,
+		TAG_OPEN,
+		'\n'}
+
 	lexers = make(map[byte]func(byte, chan byte) (Token, bool))
 
-	lexers['*'] = singleByteToken(BoldDelimeter)
-	lexers['/'] = singleByteToken(EmphasisDelimeter)
-	lexers['-'] = singleByteToken(UnorderedListItem)
-	lexers['#'] = singleByteToken(OrderedListItem)
+	lexers[BOLD_MARK] = singleByteToken(BoldDelimeter)
+	lexers[EMPHASIS_MARK] = singleByteToken(EmphasisDelimeter)
+	lexers[UNORDERED_LIST_ITEM_MARK] = singleByteToken(UnorderedListItem)
+	lexers[ORDERED_LIST_ITEM_MARK] = singleByteToken(OrderedListItem)
 
-	lexers['{'] = func(c byte, ch chan byte) (Token, bool) {
+	lexers[LITERAL_TEXT_OPEN] = func(c byte, ch chan byte) (Token, bool) {
 		nesting := 0
 		value := ""
 		b := <-ch
-		for (nesting > 0 || b != '}') && b != 0 {
-			if b == '{' {
+		for (nesting > 0 || b != LITERAL_TEXT_CLOSE) && b != 0 {
+			if b == LITERAL_TEXT_OPEN {
 				nesting++
 			}
 
-			if b == '}' {
+			if b == LITERAL_TEXT_CLOSE {
 				nesting--
 			}
 
@@ -105,25 +127,25 @@ func init() {
 
 		return Token{LiteralText, value, 0}, b == 0
 	}
-	lexers['['] = func(c byte, ch chan byte) (Token, bool) {
+	lexers[WIKILINK_OPEN] = func(c byte, ch chan byte) (Token, bool) {
 		value := ""
 		b := <-ch
-		for b != ']' && b != 0 {
+		for b != WIKILINK_CLOSE && b != 0 {
 			value = value + string(b)
 			b = <-ch
 		}
 
 		return Token{WikiLink, value, 0}, b == 0
 	}
-	lexers['<'] = func(c byte, ch chan byte) (Token, bool) {
+	lexers[TAG_OPEN] = func(c byte, ch chan byte) (Token, bool) {
 		value := string(c)
 		b := <-ch
-		for b != '>' && b != 0 {
+		for b != TAG_CLOSE && b != 0 {
 			value = value + string(b)
 			b = <-ch
 		}
 		if b != 0 {
-			value = value + string('>')
+			value = value + string(TAG_CLOSE)
 		}
 
 		return Token{Tag, value, 0}, b == 0
@@ -149,20 +171,28 @@ func init() {
 	hasPending = false
 }
 
+// Lex runs a Lexer.  It reads all bytes in until it reaches the end
+// mark, and writes out tokens.  When it is complete, it writes out
+// an EndOfFile token.
+//
+// Text tokens are separated by whitespace.  Bold, emphasis, and list
+// item delimeters are all single-byte tokens, only consuming the
+// single byte.  Literal text, wiki markup, and embedded HTML tags
+// consume all bytes from the open byte to the close byte.
 func (l *Lexer) Lex() {
 	eof := false
-	b := <-l.in
+	b := <-l.In
 	for !eof && b != 0 {
 		if b == '\n' || !unicode.IsSpace(rune(b)) {
 			f, ok := lexers[b]
 			if ok {
-				t, end := f(b, l.in)
+				t, end := f(b, l.In)
 				eof = end
-				l.out <- t
+				l.Out <- t
 			} else {
-				t, end := defaultToken(b, l.in)
+				t, end := defaultToken(b, l.In)
 				eof = end
-				l.out <- t
+				l.Out <- t
 			}
 		}
 
@@ -170,9 +200,9 @@ func (l *Lexer) Lex() {
 			b = pending
 			hasPending = false
 		} else if !eof {
-			b = <-l.in
+			b = <-l.In
 		}
 	}
 
-	l.out <- Token{EndOfFile, "", 0}
+	l.Out <- Token{EndOfFile, "", 0}
 }

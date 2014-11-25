@@ -65,7 +65,7 @@ func DocLink(project, entity string) string {
 		url, _ = indexer.urls[entity]
 	}
 
-	return proxyRoot() + "/doc/" + project + "/html/" + url
+	return proxyRoot() + "..//doc/" + project + "/html/" + url
 }
 
 func (indexer *projectIndex) index(searchData string) {

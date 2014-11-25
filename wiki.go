@@ -47,8 +47,22 @@ var templates = template.Must(template.ParseFiles(tmplDir+"edit.html",
 	tmplDir+"search.html"))
 var titleValidator = regexp.MustCompile("^" + titleRegexp + "$")
 
+var proxyRootPath string
+
+func SetProxyRoot(p string) {
+	proxyRootPath = p
+}
+
+func proxyRoot() string {
+	return proxyRootPath
+}
+
 func (p *Page) PrettyTitle() string {
 	return wikilang.WikiCase(p.Title)
+}
+
+func (p *Page) ProxyRoot() string {
+	return proxyRoot()
 }
 
 func renderTemplate(w http.ResponseWriter, file string, p *Page) {
@@ -94,7 +108,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, viewPath+title, http.StatusFound)
+	http.Redirect(w, r, proxyRoot()+viewPath+title, http.StatusFound)
 }
 
 func searchHandler(w http.ResponseWriter, r *http.Request, title string) {
@@ -167,19 +181,23 @@ func makeHandler(handler func(http.ResponseWriter, *http.Request, string), path 
 }
 
 func redirectToFrontPage(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, viewPath+"FrontPage", http.StatusFound)
+	http.Redirect(w, r, proxyRoot()+viewPath+"FrontPage", http.StatusFound)
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1:])
+	http.ServeFile(w, r, r.URL.Path[1+len(proxyRoot()):])
 }
 
-func ListenAndServe() {
+func ListenAndServe(port int) {
 	http.HandleFunc("/", redirectToFrontPage)
-	http.HandleFunc(viewPath, makeHandler(viewHandler, viewPath))
-	http.HandleFunc(editPath, makeHandler(editHandler, editPath))
-	http.HandleFunc(savePath, makeHandler(saveHandler, savePath))
-	http.HandleFunc(searchPath, makeHandler(searchHandler, searchPath))
-	http.HandleFunc(docPath, fileHandler)
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc(proxyRoot()+viewPath, makeHandler(viewHandler, proxyRoot()+viewPath))
+	http.HandleFunc(proxyRoot()+editPath, makeHandler(editHandler, proxyRoot()+editPath))
+	http.HandleFunc(proxyRoot()+savePath, makeHandler(saveHandler, proxyRoot()+savePath))
+	http.HandleFunc(proxyRoot()+searchPath, makeHandler(searchHandler, proxyRoot()+searchPath))
+	http.HandleFunc(proxyRoot()+docPath, fileHandler)
+
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	if err != nil {
+		panic(err)
+	}
 }

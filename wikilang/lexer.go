@@ -11,16 +11,16 @@ import (
 
 // These are the types of tokens that the lexer may generate.
 const (
-	Text = iota       // Standard text
-	BoldDelimeter     // Beginning or end of boldness
-	EmphasisDelimeter // Beginning or end of emphasis
-	UnorderedListItem // Beginning of an item in an unordered list
-	OrderedListItem   // Beginning of an item in an ordered list
-	LiteralText       // Literal, preformatted text
-	WikiLink          // Wiki markup for links
-	Tag               // Embedded HTML markup
-	NewLine           // New line (with indentation of next line)
-	EndOfFile         // Special token for the end of list
+	Text              = iota // Standard text
+	BoldDelimeter            // Beginning or end of boldness
+	EmphasisDelimeter        // Beginning or end of emphasis
+	UnorderedListItem        // Beginning of an item in an unordered list
+	OrderedListItem          // Beginning of an item in an ordered list
+	LiteralText              // Literal, preformatted text
+	WikiLink                 // Wiki markup for links
+	Tag                      // Embedded HTML markup
+	NewLine                  // New line (with indentation of next line)
+	EndOfFile                // Special token for the end of list
 )
 
 // These are the special bytes that indicate switches in token types.

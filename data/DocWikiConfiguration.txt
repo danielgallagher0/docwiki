@@ -1,6 +1,19 @@
 To configure [DocWiki], you need to build your project Doxygen HTML a particular way, then put it in a particular place.  DocWiki also has a single configuration file that tells it where to find various projects.
 
-/*DocWiki Configuration*/
+/*DocWiki Setup*/
+
+The configuration file {docwiki.conf} contains basic setup information for DocWiki.  It is in JSON format, and looks something like this: {
+    {
+        "Port": 8080,
+        "ProxyRoot": ""
+    }}
+
+{Port} is the port that DocWiki runs on.  {ProxyRoot} is a prefix URL path for all pages that DocWiki serves.  You can use this with Apache's [mod_proxy:http://httpd.apache.org/docs/2.2/mod/mod_proxy.html] to serve DocWiki pages from an Apache server.  Add the following line to your main Apache config: {
+    ProxyPass /ProxyRoot http://localhost:8080
+}
+where {/ProxyRoot} and the port are the ones from {docwiki.conf}
+
+/*DocWiki Project Configuration*/
 
 The DocWiki configuration file is {projectIndex.xml}, and it lives in the directory where DocWiki is run.  It contains one {project} tag for each project, and looks like this: {
 <?xml version="1.0" encoding="UTF-8"?>

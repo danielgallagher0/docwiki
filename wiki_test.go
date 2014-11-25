@@ -4,7 +4,7 @@
 
 package main
 
-import(
+import (
 	"github.com/danielgallagher0/docwiki/wikilang"
 	"testing"
 )

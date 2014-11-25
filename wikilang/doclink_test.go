@@ -16,9 +16,9 @@ func TestWikiCase(t *testing.T) {
 		{data: "Existing Spacing", expected: "Existing Spacing"},
 		{data: "Mixed SpacingWords", expected: "Mixed Spacing Words"}} {
 
-			if actual := WikiCase(data.data); actual != data.expected {
-				t.Errorf("  Expected: \"%s\" (%d)", data.expected, len(data.expected))
-				t.Errorf("    Actual: \"%s\" (%d)", actual, len(actual))
-			}
+		if actual := WikiCase(data.data); actual != data.expected {
+			t.Errorf("  Expected: \"%s\" (%d)", data.expected, len(data.expected))
+			t.Errorf("    Actual: \"%s\" (%d)", actual, len(actual))
+		}
 	}
 }

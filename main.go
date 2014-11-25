@@ -4,6 +4,32 @@
 
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/danielgallagher0/docwiki/wikilang"
+	"io/ioutil"
+)
+
+const confFile = "docwiki.conf"
+
 func main() {
-	ListenAndServe()
+	type Config struct {
+		Port      int
+		ProxyRoot string
+	}
+
+	data, err := ioutil.ReadFile(confFile)
+	if err != nil {
+		panic(fmt.Sprintf("Could not read %s: %s", confFile, err))
+	}
+
+	var conf Config
+	if err = json.Unmarshal(data, &conf); err != nil {
+		panic(fmt.Sprintf("Could not read %s: %s", confFile, err))
+	}
+
+	wikilang.SetProxyRoot(conf.ProxyRoot)
+	SetProxyRoot(conf.ProxyRoot)
+	ListenAndServe(conf.Port)
 }

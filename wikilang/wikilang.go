@@ -63,3 +63,13 @@ func WikiCase(link string) string {
 	consolidateSpaces := regexp.MustCompile("[[:space:]]+")
 	return consolidateSpaces.ReplaceAllString(splitString, " ")
 }
+
+var proxyRootPath string
+
+func proxyRoot() string {
+	return proxyRootPath
+}
+
+func SetProxyRoot(p string) {
+	proxyRootPath = p
+}

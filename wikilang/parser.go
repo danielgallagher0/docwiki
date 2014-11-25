@@ -254,7 +254,7 @@ func wikiWordUrl(s string) string {
 	parts := strings.SplitN(s, ":", 3)
 	switch len(parts) {
 	case 1:
-		return "/view/" + url.QueryEscape(parts[0])
+		return proxyRoot() + "/view/" + url.QueryEscape(parts[0])
 
 	case 2:
 		return parts[1]

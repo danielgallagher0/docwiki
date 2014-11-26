@@ -15,6 +15,7 @@ const confFile = "docwiki.conf"
 func main() {
 	type Config struct {
 		Port      int
+		ProxyRoot string
 	}
 
 	data, err := ioutil.ReadFile(confFile)
@@ -27,5 +28,6 @@ func main() {
 		panic(fmt.Sprintf("Could not read %s: %s", confFile, err))
 	}
 
+	SetProxyRoot(conf.ProxyRoot)
 	ListenAndServe(conf.Port)
 }

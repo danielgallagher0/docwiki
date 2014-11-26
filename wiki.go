@@ -86,7 +86,7 @@ func renderTemplate(w http.ResponseWriter, file string, p *Page) {
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
 	p, err := loadPage(title)
 	if err != nil {
-		http.Redirect(w, r, editPath+title, http.StatusFound)
+		http.Redirect(w, r, proxyRoot()+editPath+title, http.StatusFound)
 		return
 	}
 	renderTemplate(w, "view", p)
@@ -185,16 +185,16 @@ func redirectToFrontPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1+len(proxyRoot()):])
+	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
 func ListenAndServe(port int) {
 	http.HandleFunc("/", redirectToFrontPage)
-	http.HandleFunc(proxyRoot()+viewPath, makeHandler(viewHandler, proxyRoot()+viewPath))
-	http.HandleFunc(proxyRoot()+editPath, makeHandler(editHandler, proxyRoot()+editPath))
-	http.HandleFunc(proxyRoot()+savePath, makeHandler(saveHandler, proxyRoot()+savePath))
-	http.HandleFunc(proxyRoot()+searchPath, makeHandler(searchHandler, proxyRoot()+searchPath))
-	http.HandleFunc(proxyRoot()+docPath, fileHandler)
+	http.HandleFunc(viewPath, makeHandler(viewHandler, viewPath))
+	http.HandleFunc(editPath, makeHandler(editHandler, editPath))
+	http.HandleFunc(savePath, makeHandler(saveHandler, savePath))
+	http.HandleFunc(searchPath, makeHandler(searchHandler, searchPath))
+	http.HandleFunc(docPath, fileHandler)
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
